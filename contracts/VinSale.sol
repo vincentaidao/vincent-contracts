@@ -110,23 +110,37 @@ contract VinSale is Ownable {
     function finalize(address liquiditySeeder, uint256 lpVinAmount) external onlyOwner {
         require(!finalized, "FINALIZED");
         require(block.timestamp >= endTime, "SALE_ACTIVE");
-        require(address(this).balance >= hardCap, "TARGET_NOT_MET");
 
         finalized = true;
 
-        uint256 runwayEth = 10 ether;
-        uint256 lpEth = 15 ether;
+        uint256 totalRaised = address(this).balance;
+        uint256 lpEth = totalRaised > 15 ether ? 15 ether : totalRaised;
+        uint256 runwayEth = totalRaised > lpEth ? totalRaised - lpEth : 0;
 
-        (bool runwaySuccess, ) = daoWallet.call{value: runwayEth}("");
-        require(runwaySuccess, "RUNWAY_FAILED");
+        // Cap runway to 10 ETH, then send any remainder to DAO as well.
+        uint256 runwayToDao = runwayEth > 10 ether ? 10 ether : runwayEth;
+        uint256 extraToDao = runwayEth > 10 ether ? runwayEth - 10 ether : 0;
+
+        if (runwayToDao > 0) {
+            (bool runwaySuccess, ) = daoWallet.call{value: runwayToDao}("");
+            require(runwaySuccess, "RUNWAY_FAILED");
+        }
+        if (extraToDao > 0) {
+            (bool extraSuccess, ) = daoWallet.call{value: extraToDao}("");
+            require(extraSuccess, "EXTRA_FAILED");
+        }
 
         // Transfer ETH + VIN to seeder contract for LP creation.
-        (bool lpSuccess, ) = liquiditySeeder.call{value: lpEth}("");
-        require(lpSuccess, "LP_ETH_FAILED");
+        if (lpEth > 0) {
+            (bool lpSuccess, ) = liquiditySeeder.call{value: lpEth}("");
+            require(lpSuccess, "LP_ETH_FAILED");
+        }
 
-        IERC20(address(vin)).safeTransfer(liquiditySeeder, lpVinAmount);
+        if (lpVinAmount > 0) {
+            IERC20(address(vin)).safeTransfer(liquiditySeeder, lpVinAmount);
+        }
 
-        // Call seeder (currently placeholder).
+        // Call seeder.
         (bool seedSuccess, ) = liquiditySeeder.call(
             abi.encodeWithSignature("seed(uint256)", lpVinAmount)
         );
@@ -134,6 +148,6 @@ contract VinSale is Ownable {
 
         vin.enableTransfers();
 
-        emit Finalized(runwayEth, lpEth, lpVinAmount);
+        emit Finalized(runwayToDao, lpEth, lpVinAmount);
     }
 }
