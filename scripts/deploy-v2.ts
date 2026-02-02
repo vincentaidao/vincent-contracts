@@ -11,6 +11,7 @@ const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
 
 const POOL_MANAGER = "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543";
 const POSITION_MANAGER = "0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4";
+const PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -54,7 +55,10 @@ async function main() {
     deployer.address,
     vinAddress,
     POOL_MANAGER,
-    POSITION_MANAGER
+    POSITION_MANAGER,
+    PERMIT2,
+    DAO_WALLET,
+    lockerAddress
   );
   await seeder.waitForDeployment();
   const seederAddress = await seeder.getAddress();
