@@ -8,7 +8,12 @@ async function main() {
   const vin = await VIN.deploy(deployer.address);
   await vin.waitForDeployment();
 
-  console.log("VIN deployed:", await vin.getAddress());
+  const address = await vin.getAddress();
+  const deployTx = vin.deploymentTransaction();
+  console.log("VIN deployed:", address);
+  if (deployTx) {
+    console.log("Deploy tx:", deployTx.hash);
+  }
 }
 
 main().catch((err) => {
