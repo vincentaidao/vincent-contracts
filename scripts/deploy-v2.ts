@@ -4,7 +4,7 @@ const TOTAL_SUPPLY = ethers.parseUnits("1000000000", 18);
 const SALE_SUPPLY = ethers.parseUnits("150000000", 18);
 const DAO_SUPPLY = ethers.parseUnits("300000000", 18);
 const LP_VIN = ethers.parseUnits("90000000", 18);
-const HARD_CAP = ethers.parseEther("25");
+const HARD_CAP = ethers.parseEther("0.001");
 
 const DAO_WALLET = "0x61b9448B624Ae486be74FD1cCb668F0B52f6f51d";
 const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
@@ -17,10 +17,6 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("deployer:", deployer.address);
 
-  const now = Math.floor(Date.now() / 1000);
-  const startTime = now;
-  const endTime = startTime + 7 * 24 * 60 * 60;
-
   const VIN = await ethers.getContractFactory("VIN");
   const vin = await VIN.deploy(deployer.address);
   await vin.waitForDeployment();
@@ -29,14 +25,7 @@ async function main() {
   console.log("VIN deploy tx:", vin.deploymentTransaction()?.hash);
 
   const Sale = await ethers.getContractFactory("VinSale");
-  const sale = await Sale.deploy(
-    deployer.address,
-    vinAddress,
-    DAO_WALLET,
-    startTime,
-    endTime,
-    HARD_CAP
-  );
+  const sale = await Sale.deploy(deployer.address, vinAddress, DAO_WALLET, HARD_CAP);
   await sale.waitForDeployment();
   const saleAddress = await sale.getAddress();
   console.log("Sale deployed:", saleAddress);
@@ -76,7 +65,7 @@ async function main() {
 
   const minted = SALE_SUPPLY + DAO_SUPPLY;
   console.log("Minted total:", minted.toString(), "of", TOTAL_SUPPLY.toString());
-  console.log("Sale window:", startTime, "->", endTime);
+  console.log("Sale cap (wei):", HARD_CAP.toString());
   console.log("LP VIN:", LP_VIN.toString());
   console.log("Human wallet (later):", HUMAN_WALLET);
 }

@@ -15,14 +15,13 @@ contract VinSale is Ownable {
     using SafeERC20 for IERC20;
 
     uint256 public constant VIN_PER_ETH = 6_000_000; // 6,000,000 VIN per 1 ETH
-    uint256 public immutable startTime;
-    uint256 public immutable endTime;
-    uint256 public immutable hardCap; // in wei
+    uint256 public immutable totalCapWei; // in wei
 
     address public immutable daoWallet;
     IVIN public immutable vin;
 
     bool public finalized;
+    uint256 public totalRaised;
 
     mapping(address => uint256) public contributed;
     mapping(address => uint256) public vinOwed;
@@ -36,16 +35,12 @@ contract VinSale is Ownable {
         address initialOwner,
         address _vin,
         address _daoWallet,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _hardCap
+        uint256 _totalCapWei
     ) Ownable(initialOwner) {
-        require(_startTime < _endTime, "INVALID_WINDOW");
+        require(_totalCapWei > 0, "INVALID_CAP");
         vin = IVIN(_vin);
         daoWallet = _daoWallet;
-        startTime = _startTime;
-        endTime = _endTime;
-        hardCap = _hardCap;
+        totalCapWei = _totalCapWei;
     }
 
     receive() external payable {
@@ -53,13 +48,10 @@ contract VinSale is Ownable {
     }
 
     function commit() public payable {
-        require(block.timestamp >= startTime, "SALE_NOT_STARTED");
-        require(block.timestamp < endTime, "SALE_ENDED");
         require(!finalized, "FINALIZED");
         require(msg.value > 0, "ZERO");
 
-        uint256 total = address(this).balance - msg.value;
-        uint256 remaining = hardCap > total ? hardCap - total : 0;
+        uint256 remaining = totalCapWei > totalRaised ? totalCapWei - totalRaised : 0;
         require(remaining > 0, "CAP_REACHED");
 
         uint256 accepted = msg.value;
@@ -70,6 +62,7 @@ contract VinSale is Ownable {
         uint256 vinAmount = accepted * VIN_PER_ETH;
         contributed[msg.sender] += accepted;
         vinOwed[msg.sender] += vinAmount;
+        totalRaised += accepted;
 
         if (accepted < msg.value) {
             uint256 refundAmount = msg.value - accepted;
@@ -81,7 +74,6 @@ contract VinSale is Ownable {
     }
 
     function refund(uint256 ethAmount) external {
-        require(block.timestamp < endTime, "SALE_ENDED");
         require(!finalized, "FINALIZED");
         require(ethAmount > 0, "ZERO");
 
@@ -91,6 +83,7 @@ contract VinSale is Ownable {
         uint256 vinAmount = ethAmount * VIN_PER_ETH;
         contributed[msg.sender] = contributedAmount - ethAmount;
         vinOwed[msg.sender] -= vinAmount;
+        totalRaised -= ethAmount;
 
         (bool success, ) = msg.sender.call{value: ethAmount}("");
         require(success, "REFUND_FAILED");
@@ -107,13 +100,12 @@ contract VinSale is Ownable {
         emit Claim(msg.sender, amount);
     }
 
-    function finalize(address liquiditySeeder, uint256 lpVinAmount) external onlyOwner {
+    function finalize(address liquiditySeeder) external onlyOwner {
         require(!finalized, "FINALIZED");
-        require(block.timestamp >= endTime, "SALE_ACTIVE");
+        require(totalRaised >= totalCapWei, "CAP_NOT_MET");
 
         finalized = true;
 
-        uint256 totalRaised = address(this).balance;
         uint256 lpEth = totalRaised > 15 ether ? 15 ether : totalRaised;
         uint256 runwayEth = totalRaised > lpEth ? totalRaised - lpEth : 0;
 
@@ -129,6 +121,8 @@ contract VinSale is Ownable {
             (bool extraSuccess, ) = daoWallet.call{value: extraToDao}("");
             require(extraSuccess, "EXTRA_FAILED");
         }
+
+        uint256 lpVinAmount = lpEth * VIN_PER_ETH;
 
         // Transfer ETH + VIN to seeder contract for LP creation.
         if (lpEth > 0) {
