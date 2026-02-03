@@ -9,9 +9,8 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("deployer:", deployer.address);
 
-  const Locker = await ethers.getContractFactory("LPPositionLocker");
-  const unlockTime = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
-  const locker = await Locker.deploy(DAO_WALLET, unlockTime);
+  const Locker = await ethers.getContractFactory("PermanentLocker");
+  const locker = await Locker.deploy();
   await locker.waitForDeployment();
 
   const lockerAddress = await locker.getAddress();
@@ -19,12 +18,11 @@ async function main() {
 
   console.log("Locker deployed:", lockerAddress);
   console.log("Locker deploy tx:", lockerTx);
-  console.log("Unlock time:", unlockTime);
 
   const outPath = writeDeployment(NETWORK, {
     chainId: 11155111,
     daoWallet: DAO_WALLET,
-    lpPositionLocker: { address: lockerAddress, tx: lockerTx, unlockTime },
+    permanentLocker: { address: lockerAddress, tx: lockerTx },
   });
   console.log("Wrote deployment record:", outPath);
 }

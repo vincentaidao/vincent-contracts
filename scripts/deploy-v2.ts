@@ -31,9 +31,8 @@ async function main() {
   console.log("Sale deployed:", saleAddress);
   console.log("Sale deploy tx:", sale.deploymentTransaction()?.hash);
 
-  const Locker = await ethers.getContractFactory("LPPositionLocker");
-  const unlockTime = startTime + 365 * 24 * 60 * 60; // 1 year lock
-  const locker = await Locker.deploy(DAO_WALLET, unlockTime);
+  const Locker = await ethers.getContractFactory("PermanentLocker");
+  const locker = await Locker.deploy();
   await locker.waitForDeployment();
   const lockerAddress = await locker.getAddress();
   console.log("Locker deployed:", lockerAddress);
