@@ -32,14 +32,12 @@ async function main() {
   console.log("Sale deployed:", saleAddress);
   console.log("Sale deploy tx:", sale.deploymentTransaction()?.hash);
 
-  const Locker = await ethers.getContractFactory("LPPositionLocker");
-  const unlockTime = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
-  const locker = await Locker.deploy(DAO_WALLET, unlockTime);
+  const Locker = await ethers.getContractFactory("PermanentLocker");
+  const locker = await Locker.deploy();
   await locker.waitForDeployment();
   const lockerAddress = await locker.getAddress();
   console.log("Locker deployed:", lockerAddress);
   console.log("Locker deploy tx:", locker.deploymentTransaction()?.hash);
-  console.log("Locker unlockTime:", unlockTime);
 
   const Seeder = await ethers.getContractFactory("LiquiditySeeder");
   const seeder = await Seeder.deploy(
