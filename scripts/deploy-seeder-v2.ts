@@ -1,4 +1,7 @@
 import { ethers } from "hardhat";
+import { writeDeployment } from "./lib/deployments";
+
+const NETWORK = "sepolia";
 
 const VIN = "0xD0372b3d77A17A0aDB9A39A255A996639Dc9a3Ca";
 const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";
@@ -24,8 +27,25 @@ async function main() {
   );
   await seeder.waitForDeployment();
 
-  console.log("Seeder deployed:", await seeder.getAddress());
-  console.log("Seeder deploy tx:", seeder.deploymentTransaction()?.hash);
+  const seederAddress = await seeder.getAddress();
+  const seederTx = seeder.deploymentTransaction()?.hash;
+
+  console.log("Seeder deployed:", seederAddress);
+  console.log("Seeder deploy tx:", seederTx);
+
+  const outPath = writeDeployment(NETWORK, {
+    chainId: 11155111,
+    vin: { address: VIN },
+    seeder: { address: seederAddress, tx: seederTx },
+    permanentLocker: { address: LOCKER },
+    daoWallet: DAO_WALLET,
+    uniswapV4: {
+      poolManager: POOL_MANAGER,
+      positionManager: POSITION_MANAGER,
+      permit2: PERMIT2,
+    },
+  });
+  console.log("Wrote deployment record:", outPath);
 }
 
 main().catch((err) => {
