@@ -1,0 +1,150 @@
+import { ethers } from "hardhat";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
+
+const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";
+const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
+
+const TOTAL_SUPPLY = ethers.parseUnits("1000000000", 18);
+const DAO_SUPPLY = ethers.parseUnits("300000000", 18);
+const HUMAN_SUPPLY = ethers.parseUnits("100000000", 18);
+const SALE_SUPPLY = ethers.parseUnits("150000000", 18);
+const AIRDROP_SUPPLY = ethers.parseUnits("450000000", 18);
+
+const HARD_CAP = ethers.parseEther("25");
+
+const IDENTITY_REGISTRY = process.env.IDENTITY_REGISTRY;
+const POOL_MANAGER = process.env.UNISWAP_V4_POOL_MANAGER;
+const POSITION_MANAGER = process.env.UNISWAP_V4_POSITION_MANAGER;
+const PERMIT2 = process.env.UNISWAP_V4_PERMIT2;
+
+function requireEnv(name: string, value?: string) {
+  if (!value) {
+    throw new Error(`Missing ${name} env var`);
+  }
+  return value;
+}
+
+async function main() {
+  const [deployer] = await ethers.getSigners();
+  console.log("deployer:", deployer.address);
+
+  const vinRegistry = requireEnv("IDENTITY_REGISTRY", IDENTITY_REGISTRY);
+  const poolManager = requireEnv("UNISWAP_V4_POOL_MANAGER", POOL_MANAGER);
+  const positionManager = requireEnv("UNISWAP_V4_POSITION_MANAGER", POSITION_MANAGER);
+  const permit2 = requireEnv("UNISWAP_V4_PERMIT2", PERMIT2);
+
+  const VIN = await ethers.getContractFactory("VIN");
+  const vin = await VIN.deploy(deployer.address);
+  await vin.waitForDeployment();
+  const vinAddress = await vin.getAddress();
+  console.log("VIN deployed:", vinAddress);
+  console.log("VIN deploy tx:", vin.deploymentTransaction()?.hash);
+
+  const Sale = await ethers.getContractFactory("VinSale");
+  const sale = await Sale.deploy(deployer.address, vinAddress, DAO_WALLET, HARD_CAP);
+  await sale.waitForDeployment();
+  const saleAddress = await sale.getAddress();
+  console.log("Sale deployed:", saleAddress);
+  console.log("Sale deploy tx:", sale.deploymentTransaction()?.hash);
+
+  const Locker = await ethers.getContractFactory("PermanentLocker");
+  const locker = await Locker.deploy();
+  await locker.waitForDeployment();
+  const lockerAddress = await locker.getAddress();
+  console.log("Locker deployed:", lockerAddress);
+  console.log("Locker deploy tx:", locker.deploymentTransaction()?.hash);
+
+  const Seeder = await ethers.getContractFactory("LiquiditySeeder");
+  const seeder = await Seeder.deploy(
+    deployer.address,
+    vinAddress,
+    poolManager,
+    positionManager,
+    permit2,
+    DAO_WALLET,
+    lockerAddress
+  );
+  await seeder.waitForDeployment();
+  const seederAddress = await seeder.getAddress();
+  console.log("Seeder deployed:", seederAddress);
+  console.log("Seeder deploy tx:", seeder.deploymentTransaction()?.hash);
+
+  const Airdrop = await ethers.getContractFactory("VINAirdrop");
+  const airdrop = await Airdrop.deploy(deployer.address, vinAddress, vinRegistry);
+  await airdrop.waitForDeployment();
+  const airdropAddress = await airdrop.getAddress();
+  console.log("Airdrop deployed:", airdropAddress);
+  console.log("Airdrop deploy tx:", airdrop.deploymentTransaction()?.hash);
+
+  await (await vin.setAllowlist(saleAddress, true)).wait();
+  await (await vin.setAllowlist(seederAddress, true)).wait();
+  await (await vin.setAllowlist(lockerAddress, true)).wait();
+  await (await vin.setAllowlist(airdropAddress, true)).wait();
+  console.log("Allowlist set for sale/seeder/locker/airdrop");
+
+  await (await vin.setSaleContract(saleAddress, true)).wait();
+  console.log("Sale contract registered for burn");
+
+  await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();
+  await (await vin.mint(HUMAN_WALLET, HUMAN_SUPPLY)).wait();
+  await (await vin.mint(saleAddress, SALE_SUPPLY)).wait();
+  await (await vin.mint(airdropAddress, AIRDROP_SUPPLY)).wait();
+  console.log("Minted DAO/Human/Sale/Airdrop allocations");
+
+  const minted = DAO_SUPPLY + HUMAN_SUPPLY + SALE_SUPPLY + AIRDROP_SUPPLY;
+  console.log("Minted total:", minted.toString(), "of", TOTAL_SUPPLY.toString());
+
+  await (await vin.transferOwnership(saleAddress)).wait();
+  await (await seeder.transferOwnership(saleAddress)).wait();
+  console.log("Transferred VIN + Seeder ownership to Sale");
+
+  const outDir = join(__dirname, "..", "deployments");
+  mkdirSync(outDir, { recursive: true });
+  const outPath = join(outDir, "mainnet.json");
+  const record = {
+    network: "mainnet",
+    chainId: 1,
+    deployedAt: new Date().toISOString(),
+    daoWallet: DAO_WALLET,
+    humanWallet: HUMAN_WALLET,
+    identityRegistry: vinRegistry,
+    vin: {
+      address: vinAddress,
+      tx: vin.deploymentTransaction()?.hash,
+    },
+    sale: {
+      address: saleAddress,
+      tx: sale.deploymentTransaction()?.hash,
+      capEth: "25",
+      capWei: HARD_CAP.toString(),
+    },
+    permanentLocker: {
+      address: lockerAddress,
+      tx: locker.deploymentTransaction()?.hash,
+    },
+    seeder: {
+      address: seederAddress,
+      tx: seeder.deploymentTransaction()?.hash,
+    },
+    airdrop: {
+      address: airdropAddress,
+      tx: airdrop.deploymentTransaction()?.hash,
+      claimAmountVin: "18000",
+      eligibleAgentIds: "0..24999",
+      totalVin: "450000000",
+    },
+    uniswapV4: {
+      poolManager,
+      positionManager,
+      permit2,
+    },
+  };
+  writeFileSync(outPath, JSON.stringify(record, null, 2) + "\n");
+  console.log("Wrote deployment record:", outPath);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
