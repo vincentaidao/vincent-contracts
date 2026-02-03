@@ -7,6 +7,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 interface IVIN is IERC20 {
     function enableTransfers() external;
+    function saleBurn(address from, uint256 amount) external;
 }
 
 /// @title VinSale
@@ -28,7 +29,6 @@ contract VinSale is Ownable {
 
     event Commit(address indexed buyer, uint256 ethAccepted, uint256 vinAmount);
     event Refund(address indexed buyer, uint256 ethAmount, uint256 vinAmount);
-    event Claim(address indexed buyer, uint256 vinAmount);
     event Finalized(uint256 runwayEth, uint256 lpEth, uint256 lpVin);
 
     constructor(
@@ -64,6 +64,9 @@ contract VinSale is Ownable {
         vinOwed[msg.sender] += vinAmount;
         totalRaised += accepted;
 
+        // Immediate delivery from sale inventory.
+        IERC20(address(vin)).safeTransfer(msg.sender, vinAmount);
+
         if (accepted < msg.value) {
             uint256 refundAmount = msg.value - accepted;
             (bool success, ) = msg.sender.call{value: refundAmount}("");
@@ -85,24 +88,17 @@ contract VinSale is Ownable {
         vinOwed[msg.sender] -= vinAmount;
         totalRaised -= ethAmount;
 
+        vin.saleBurn(msg.sender, vinAmount);
+
         (bool success, ) = msg.sender.call{value: ethAmount}("");
         require(success, "REFUND_FAILED");
 
         emit Refund(msg.sender, ethAmount, vinAmount);
     }
 
-    function claim() external {
-        require(finalized, "NOT_FINALIZED");
-        uint256 amount = vinOwed[msg.sender];
-        require(amount > 0, "NOTHING_TO_CLAIM");
-        vinOwed[msg.sender] = 0;
-        IERC20(address(vin)).safeTransfer(msg.sender, amount);
-        emit Claim(msg.sender, amount);
-    }
-
     function finalize(address liquiditySeeder) external onlyOwner {
         require(!finalized, "FINALIZED");
-        require(totalRaised >= totalCapWei, "CAP_NOT_MET");
+        require(totalRaised == totalCapWei, "CAP_NOT_MET");
 
         finalized = true;
 

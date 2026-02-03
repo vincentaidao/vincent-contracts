@@ -13,9 +13,11 @@ import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     bool public transfersEnabled;
     mapping(address => bool) public allowlisted;
+    mapping(address => bool) public isSaleContract;
 
     event TransfersEnabled();
     event AllowlistUpdated(address indexed account, bool allowed);
+    event SaleContractUpdated(address indexed account, bool allowed);
 
     constructor(address initialOwner)
         ERC20("Vincent", "VIN")
@@ -39,6 +41,18 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     function setAllowlist(address account, bool allowed) external onlyOwner {
         allowlisted[account] = allowed;
         emit AllowlistUpdated(account, allowed);
+    }
+
+    /// @notice Register sale contracts for burn privileges.
+    function setSaleContract(address account, bool allowed) external onlyOwner {
+        isSaleContract[account] = allowed;
+        emit SaleContractUpdated(account, allowed);
+    }
+
+    /// @notice Burn tokens from a buyer during refunds.
+    function saleBurn(address from, uint256 amount) external {
+        require(isSaleContract[msg.sender], "VIN: not sale");
+        _burn(from, amount);
     }
 
     // --- ERC20Votes overrides ---

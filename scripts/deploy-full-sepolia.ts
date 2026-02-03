@@ -62,6 +62,10 @@ async function main() {
   await (await vin.setAllowlist(lockerAddress, true)).wait();
   console.log("Allowlist set for sale/seeder/locker");
 
+  // Register sale contract for burn privileges
+  await (await vin.setSaleContract(saleAddress, true)).wait();
+  console.log("Sale contract registered for burn");
+
   // Mint allocations
   await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();
   await (await vin.mint(HUMAN_WALLET, HUMAN_SUPPLY)).wait();
