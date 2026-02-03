@@ -1,4 +1,6 @@
 import { ethers } from "hardhat";
+import { mkdirSync, writeFileSync } from "fs";
+import { join } from "path";
 
 const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";
 const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
@@ -90,6 +92,46 @@ async function main() {
   await (await vin.transferOwnership(saleAddress)).wait();
   await (await seeder.transferOwnership(saleAddress)).wait();
   console.log("Transferred VIN + Seeder ownership to Sale");
+
+  // Write deployment record
+  const outDir = join(__dirname, "..", "deployments");
+  mkdirSync(outDir, { recursive: true });
+  const outPath = join(outDir, "sepolia.json");
+  const record = {
+    network: "sepolia",
+    chainId: 11155111,
+    deployedAt: new Date().toISOString(),
+    daoWallet: DAO_WALLET,
+    humanWallet: HUMAN_WALLET,
+    identityRegistry: IDENTITY_REGISTRY,
+    vin: {
+      address: vinAddress,
+      tx: vin.deploymentTransaction()?.hash,
+    },
+    sale: {
+      address: saleAddress,
+      tx: sale.deploymentTransaction()?.hash,
+      capEth: "0.001",
+      capWei: HARD_CAP.toString(),
+    },
+    permanentLocker: {
+      address: lockerAddress,
+      tx: locker.deploymentTransaction()?.hash,
+    },
+    seeder: {
+      address: seederAddress,
+      tx: seeder.deploymentTransaction()?.hash,
+    },
+    airdrop: {
+      address: airdropAddress,
+      tx: airdrop.deploymentTransaction()?.hash,
+      claimAmountVin: "18000",
+      eligibleAgentIds: "0..24999",
+      totalVin: "450000000",
+    },
+  };
+  writeFileSync(outPath, JSON.stringify(record, null, 2) + "\n");
+  console.log("Wrote deployment record:", outPath);
 }
 
 main().catch((err) => {
