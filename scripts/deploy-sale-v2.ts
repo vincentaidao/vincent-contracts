@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 
 const VIN = "0xD0372b3d77A17A0aDB9A39A255A996639Dc9a3Ca";
-const DAO_WALLET = "0x61b9448B624Ae486be74FD1cCb668F0B52f6f51d";
+const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";
 const HARD_CAP = ethers.parseEther("0.001");
 
 async function main() {
