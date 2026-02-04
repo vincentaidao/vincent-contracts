@@ -112,9 +112,9 @@ describe("VinSale", function () {
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
 
-    await expect(sale.connect(buyer).finalize(await seeder.getAddress())).to.be.revertedWith(
-      "Ownable: caller is not the owner"
-    );
+    await expect(sale.connect(buyer).finalize(await seeder.getAddress()))
+      .to.be.revertedWithCustomError(sale, "OwnableUnauthorizedAccount")
+      .withArgs(buyer.address);
   });
 
   it("finalizes only when cap is met, seeds LP, and enables transfers", async function () {

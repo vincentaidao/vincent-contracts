@@ -46,18 +46,18 @@ describe("VINAirdrop", function () {
     const airdrop = await Airdrop.deploy(owner.address, await vin.getAddress(), await registry.getAddress());
     await airdrop.waitForDeployment();
 
-    await expect(airdrop.connect(attacker).setClaimEnabled(true)).to.be.revertedWith(
-      "Ownable: caller is not the owner"
-    );
-    await expect(airdrop.connect(attacker).setClaimEndBlock(100)).to.be.revertedWith(
-      "Ownable: caller is not the owner"
-    );
-    await expect(airdrop.connect(attacker).enableClaimsForDuration(10)).to.be.revertedWith(
-      "Ownable: caller is not the owner"
-    );
+    await expect(airdrop.connect(attacker).setClaimEnabled(true))
+      .to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount")
+      .withArgs(attacker.address);
+    await expect(airdrop.connect(attacker).setClaimEndBlock(100))
+      .to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount")
+      .withArgs(attacker.address);
+    await expect(airdrop.connect(attacker).enableClaimsForDuration(10))
+      .to.be.revertedWithCustomError(airdrop, "OwnableUnauthorizedAccount")
+      .withArgs(attacker.address);
   });
 
-  it("exposes eligibility view", async function () {
+  it("exposes isEligible(agentId)", async function () {
     const [owner, claimant] = await ethers.getSigners();
 
     const VIN = await ethers.getContractFactory("VIN");
@@ -75,20 +75,11 @@ describe("VINAirdrop", function () {
     await (await vin.mint(await airdrop.getAddress(), CLAIM_AMOUNT)).wait();
     await (await vin.setAllowlist(await airdrop.getAddress(), true)).wait();
 
-    const [invalidEligible, invalidReason] = await airdrop.eligibility(25_000);
-    expect(invalidEligible).to.equal(false);
-    expect(invalidReason).to.equal("INVALID_AGENT");
-
-    const [noWalletEligible, noWalletReason] = await airdrop.eligibility(7);
-    expect(noWalletEligible).to.equal(false);
-    expect(noWalletReason).to.equal("NO_WALLET");
+    expect(await airdrop.isEligible(25_000)).to.equal(false);
+    expect(await airdrop.isEligible(7)).to.equal(false);
 
     await (await registry.setAgentWallet(7, claimant.address)).wait();
-    const [eligible, reason] = await airdrop.eligibility(7);
-    expect(eligible).to.equal(true);
-    expect(reason).to.equal("ELIGIBLE");
     expect(await airdrop.isEligible(7)).to.equal(true);
-    expect(await airdrop.isEligibleForAgent(7)).to.equal(true);
   });
 
   it("blocks invalid or duplicate claims", async function () {

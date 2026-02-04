@@ -30,24 +30,10 @@ contract VINAirdrop is Ownable {
     event ClaimWindowSet(uint256 startBlock, uint256 endBlock);
     event Claimed(uint256 indexed agentId, address indexed wallet, uint256 amount);
 
-    /// @notice Returns eligibility status plus a reason string for the agent.
-    function eligibility(uint256 agentId) public view returns (bool eligible, string memory reason) {
-        if (agentId >= MAX_AGENT_ID) return (false, "INVALID_AGENT");
-
-        address registered = registry.getAgentWallet(agentId);
-        if (registered == address(0)) return (false, "NO_WALLET");
-        return (true, "ELIGIBLE");
-    }
-
-    /// @notice Returns true if the agent is eligible based on registry data.
+    /// @notice Returns true if the agentId is in-range and has a registered wallet.
     function isEligible(uint256 agentId) public view returns (bool) {
-        (bool eligible, ) = eligibility(agentId);
-        return eligible;
-    }
-
-    /// @notice Returns true if the registered wallet for agentId is eligible based on registry data.
-    function isEligibleForAgent(uint256 agentId) external view returns (bool) {
-        return isEligible(agentId);
+        if (agentId >= MAX_AGENT_ID) return false;
+        return registry.getAgentWallet(agentId) != address(0);
     }
 
     constructor(address initialOwner, address vinToken, address registryAddress) Ownable(initialOwner) {

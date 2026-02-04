@@ -19,6 +19,11 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     event AllowlistUpdated(address indexed account, bool allowed);
     event SaleContractUpdated(address indexed account, bool allowed);
 
+    modifier onlySale() {
+        require(isSaleContract[msg.sender], "VIN: not sale");
+        _;
+    }
+
     constructor(address initialOwner)
         ERC20("Vincent", "VIN")
         ERC20Permit("Vincent")
@@ -37,6 +42,12 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
         emit TransfersEnabled();
     }
 
+    /// @notice Enable token transfers from the sale contract.
+    function enableTransfersFromSale() external onlySale {
+        transfersEnabled = true;
+        emit TransfersEnabled();
+    }
+
     /// @notice Allow system contracts to transfer before global enable.
     function setAllowlist(address account, bool allowed) external onlyOwner {
         allowlisted[account] = allowed;
@@ -50,8 +61,7 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     }
 
     /// @notice Burn tokens from a buyer during refunds.
-    function saleBurn(address from, uint256 amount) external {
-        require(isSaleContract[msg.sender], "VIN: not sale");
+    function saleBurn(address from, uint256 amount) external onlySale {
         _burn(from, amount);
     }
 
