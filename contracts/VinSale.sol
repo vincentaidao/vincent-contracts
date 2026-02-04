@@ -15,7 +15,7 @@ interface IVIN is IERC20 {
 contract VinSale is Ownable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant VIN_PER_ETH = 6_000_000; // 6,000,000 VIN per 1 ETH
+    uint256 public constant VIN_PER_ETH = 5_000_000; // 5,000,000 VIN per 1 ETH
     uint256 public immutable totalCapWei; // in wei
 
     address public immutable daoWallet;
@@ -102,20 +102,12 @@ contract VinSale is Ownable {
 
         finalized = true;
 
-        uint256 lpEth = totalRaised > 15 ether ? 15 ether : totalRaised;
-        uint256 runwayEth = totalRaised > lpEth ? totalRaised - lpEth : 0;
+        uint256 lpEth = totalRaised > 30 ether ? 30 ether : totalRaised;
+        uint256 treasuryEth = totalRaised > lpEth ? totalRaised - lpEth : 0;
 
-        // Cap runway to 10 ETH, then send any remainder to DAO as well.
-        uint256 runwayToDao = runwayEth > 10 ether ? 10 ether : runwayEth;
-        uint256 extraToDao = runwayEth > 10 ether ? runwayEth - 10 ether : 0;
-
-        if (runwayToDao > 0) {
-            (bool runwaySuccess, ) = daoWallet.call{value: runwayToDao}("");
-            require(runwaySuccess, "RUNWAY_FAILED");
-        }
-        if (extraToDao > 0) {
-            (bool extraSuccess, ) = daoWallet.call{value: extraToDao}("");
-            require(extraSuccess, "EXTRA_FAILED");
+        if (treasuryEth > 0) {
+            (bool treasurySuccess, ) = daoWallet.call{value: treasuryEth}("");
+            require(treasurySuccess, "TREASURY_FAILED");
         }
 
         uint256 lpVinAmount = lpEth * VIN_PER_ETH;
@@ -138,6 +130,6 @@ contract VinSale is Ownable {
 
         vin.enableTransfers();
 
-        emit Finalized(runwayToDao, lpEth, lpVinAmount);
+        emit Finalized(treasuryEth, lpEth, lpVinAmount);
     }
 }

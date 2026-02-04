@@ -5,13 +5,13 @@ import { join } from "path";
 const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";
 const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
 
-const TOTAL_SUPPLY = ethers.parseUnits("1000000000", 18);
 const DAO_SUPPLY = ethers.parseUnits("300000000", 18);
 const HUMAN_SUPPLY = ethers.parseUnits("100000000", 18);
-const SALE_SUPPLY = ethers.parseUnits("150000000", 18);
-const AIRDROP_SUPPLY = ethers.parseUnits("450000000", 18);
+const SALE_SUPPLY = ethers.parseUnits("300000000", 18);
+const LP_SUPPLY = ethers.parseUnits("150000000", 18);
+const AIRDROP_SUPPLY = ethers.parseUnits("300000000", 18);
 
-const HARD_CAP = ethers.parseEther("25");
+const HARD_CAP = ethers.parseEther("60");
 
 const IDENTITY_REGISTRY = process.env.IDENTITY_REGISTRY;
 const POOL_MANAGER = process.env.UNISWAP_V4_POOL_MANAGER;
@@ -94,12 +94,12 @@ async function main() {
 
   await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();
   await (await vin.mint(HUMAN_WALLET, HUMAN_SUPPLY)).wait();
-  await (await vin.mint(saleAddress, SALE_SUPPLY)).wait();
+  await (await vin.mint(saleAddress, SALE_SUPPLY + LP_SUPPLY)).wait();
   await (await vin.mint(airdropAddress, AIRDROP_SUPPLY)).wait();
-  console.log("Minted DAO/Human/Sale/Airdrop allocations");
+  console.log("Minted DAO/Human/Sale+LP/Airdrop allocations");
 
-  const minted = DAO_SUPPLY + HUMAN_SUPPLY + SALE_SUPPLY + AIRDROP_SUPPLY;
-  console.log("Minted total:", minted.toString(), "of", TOTAL_SUPPLY.toString());
+  const minted = DAO_SUPPLY + HUMAN_SUPPLY + SALE_SUPPLY + LP_SUPPLY + AIRDROP_SUPPLY;
+  console.log("Minted total:", minted.toString());
 
   await (await vin.transferOwnership(saleAddress)).wait();
   await (await seeder.transferOwnership(saleAddress)).wait();
@@ -122,7 +122,7 @@ async function main() {
     sale: {
       address: saleAddress,
       tx: sale.deploymentTransaction()?.hash,
-      capEth: "25",
+      capEth: "60",
       capWei: HARD_CAP.toString(),
     },
     permanentLocker: {
@@ -136,9 +136,9 @@ async function main() {
     airdrop: {
       address: airdropAddress,
       tx: airdrop.deploymentTransaction()?.hash,
-      claimAmountVin: "18000",
+      claimAmountVin: "12000",
       eligibleAgentIds: "0..24999",
-      totalVin: "450000000",
+      totalVin: "300000000",
       claimDurationBlocks: blocksFor3Months.toString(),
       claimEnabled: false,
     },

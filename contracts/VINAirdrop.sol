@@ -15,7 +15,7 @@ contract VINAirdrop is Ownable {
     using SafeERC20 for IERC20;
 
     uint256 public constant MAX_AGENT_ID = 25000;
-    uint256 public constant CLAIM_AMOUNT = 18_000 ether;
+    uint256 public constant CLAIM_AMOUNT = 12_000 ether;
 
     IERC20 public immutable vin;
     IIdentityRegistry public immutable registry;
