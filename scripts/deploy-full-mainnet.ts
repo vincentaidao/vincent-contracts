@@ -77,6 +77,14 @@ async function main() {
   console.log("Airdrop deployed:", airdropAddress);
   console.log("Airdrop deploy tx:", airdrop.deploymentTransaction()?.hash);
 
+  const provider = ethers.provider;
+  const deployBlock = await provider.getBlockNumber();
+  const blocksFor3Months = 648_000; // ~90 days @ 12s blocks
+  const claimEndBlock = deployBlock + blocksFor3Months;
+  await (await airdrop.setClaimEndBlock(claimEndBlock)).wait();
+  await (await airdrop.setClaimEnabled(true)).wait();
+  console.log("Airdrop claim end block:", claimEndBlock);
+
   await (await vin.setAllowlist(saleAddress, true)).wait();
   await (await vin.setAllowlist(seederAddress, true)).wait();
   await (await vin.setAllowlist(lockerAddress, true)).wait();
@@ -133,6 +141,8 @@ async function main() {
       claimAmountVin: "18000",
       eligibleAgentIds: "0..24999",
       totalVin: "450000000",
+      claimEndBlock: claimEndBlock.toString(),
+      claimEnabled: true,
     },
     uniswapV4: {
       poolManager,

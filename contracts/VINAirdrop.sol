@@ -23,8 +23,10 @@ contract VINAirdrop is Ownable {
     mapping(uint256 => bool) public claimed;
     uint256 public totalClaimedVin;
     bool public claimEnabled;
+    uint256 public claimEndBlock;
 
     event ClaimEnabledSet(bool enabled);
+    event ClaimEndBlockSet(uint256 endBlock);
     event Claimed(uint256 indexed agentId, address indexed wallet, uint256 amount);
 
     constructor(address initialOwner, address vinToken, address registryAddress) Ownable(initialOwner) {
@@ -37,8 +39,15 @@ contract VINAirdrop is Ownable {
         emit ClaimEnabledSet(enabled);
     }
 
+    function setClaimEndBlock(uint256 endBlock) external onlyOwner {
+        require(endBlock > block.number, "END_IN_PAST");
+        claimEndBlock = endBlock;
+        emit ClaimEndBlockSet(endBlock);
+    }
+
     function claim(uint256 agentId) external {
         require(claimEnabled, "CLAIM_DISABLED");
+        require(claimEndBlock == 0 || block.number <= claimEndBlock, "CLAIM_ENDED");
         require(agentId < MAX_AGENT_ID, "INVALID_AGENT");
         require(!claimed[agentId], "ALREADY_CLAIMED");
 
