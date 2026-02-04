@@ -80,10 +80,8 @@ async function main() {
   const provider = ethers.provider;
   const deployBlock = await provider.getBlockNumber();
   const blocksFor3Months = 648_000; // ~90 days @ 12s blocks
-  const claimEndBlock = deployBlock + blocksFor3Months;
-  await (await airdrop.setClaimEndBlock(claimEndBlock)).wait();
-  await (await airdrop.setClaimEnabled(true)).wait();
-  console.log("Airdrop claim end block:", claimEndBlock);
+  console.log("Deploy block:", deployBlock);
+  console.log("Claims left disabled; enable manually with enableClaimsForDuration(blocksFor3Months).");
 
   await (await vin.setAllowlist(saleAddress, true)).wait();
   await (await vin.setAllowlist(seederAddress, true)).wait();
@@ -141,8 +139,8 @@ async function main() {
       claimAmountVin: "18000",
       eligibleAgentIds: "0..24999",
       totalVin: "450000000",
-      claimEndBlock: claimEndBlock.toString(),
-      claimEnabled: true,
+      claimDurationBlocks: blocksFor3Months.toString(),
+      claimEnabled: false,
     },
     uniswapV4: {
       poolManager,

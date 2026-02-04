@@ -27,6 +27,7 @@ contract VINAirdrop is Ownable {
 
     event ClaimEnabledSet(bool enabled);
     event ClaimEndBlockSet(uint256 endBlock);
+    event ClaimWindowSet(uint256 startBlock, uint256 endBlock);
     event Claimed(uint256 indexed agentId, address indexed wallet, uint256 amount);
 
     constructor(address initialOwner, address vinToken, address registryAddress) Ownable(initialOwner) {
@@ -43,6 +44,16 @@ contract VINAirdrop is Ownable {
         require(endBlock > block.number, "END_IN_PAST");
         claimEndBlock = endBlock;
         emit ClaimEndBlockSet(endBlock);
+    }
+
+    function enableClaimsForDuration(uint256 durationBlocks) external onlyOwner {
+        require(durationBlocks > 0, "DURATION_ZERO");
+        uint256 endBlock = block.number + durationBlocks;
+        claimEndBlock = endBlock;
+        claimEnabled = true;
+        emit ClaimEndBlockSet(endBlock);
+        emit ClaimEnabledSet(true);
+        emit ClaimWindowSet(block.number, endBlock);
     }
 
     function claim(uint256 agentId) external {
