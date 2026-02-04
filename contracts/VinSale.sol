@@ -29,7 +29,7 @@ contract VinSale is Ownable {
 
     event Commit(address indexed buyer, uint256 ethAccepted, uint256 vinAmount);
     event Refund(address indexed buyer, uint256 ethAmount, uint256 vinAmount);
-    event Finalized(uint256 runwayEth, uint256 lpEth, uint256 lpVin);
+    event Finalized(uint256 treasuryEth, uint256 lpEth, uint256 lpVin);
 
     constructor(
         address initialOwner,
