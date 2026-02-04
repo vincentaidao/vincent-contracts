@@ -12,6 +12,7 @@ interface IVIN is IERC20 {
 
 /// @title VinSale
 /// @notice Fixed-price ETH sale with refunds and post-finalize claims.
+/// @dev Sale can only be finalized once the hard cap is met. No time-based end and no early finalize.
 contract VinSale is Ownable {
     using SafeERC20 for IERC20;
 
