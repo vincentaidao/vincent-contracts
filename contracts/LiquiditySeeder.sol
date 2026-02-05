@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -20,7 +21,7 @@ import {IAllowanceTransfer} from "./interfaces/IAllowanceTransfer.sol";
 
 /// @title LiquiditySeeder
 /// @notice Seeds a Uniswap v4 full-range position using VIN + native ETH.
-contract LiquiditySeeder is Ownable {
+contract LiquiditySeeder is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using PoolIdLibrary for PoolKey;
 
@@ -56,7 +57,7 @@ contract LiquiditySeeder is Ownable {
     receive() external payable {}
 
     /// @notice Seed a full-range position using all ETH + tokenAmount VIN held by this contract.
-    function seed(uint256 tokenAmount) external onlyOwner {
+    function seed(uint256 tokenAmount) external onlyOwner nonReentrant {
         uint256 ethAmount = address(this).balance;
         require(ethAmount > 0, "NO_ETH");
         require(tokenAmount > 0, "NO_TOKEN");
@@ -172,7 +173,7 @@ contract LiquiditySeeder is Ownable {
     }
 
     /// @notice Rescue funds if seeding is postponed.
-    function rescue(address to, uint256 tokenAmount, uint256 ethAmount) external onlyOwner {
+    function rescue(address to, uint256 tokenAmount, uint256 ethAmount) external onlyOwner nonReentrant {
         if (tokenAmount > 0) {
             IERC20(token).safeTransfer(to, tokenAmount);
         }

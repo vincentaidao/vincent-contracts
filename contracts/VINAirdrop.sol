@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -12,7 +13,7 @@ interface IIdentityRegistry {
 /// @title VINAirdrop
 /// @notice Airdrop contract for eligible agents.
 /// @dev Claims are manually enabled after the sale + LP seeding are complete.
-contract VINAirdrop is Ownable {
+contract VINAirdrop is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant MAX_AGENT_ID = 25000;
@@ -64,7 +65,7 @@ contract VINAirdrop is Ownable {
         emit ClaimWindowSet(block.number, endBlock);
     }
 
-    function claim(uint256 agentId) external {
+    function claim(uint256 agentId) external nonReentrant {
         require(claimEnabled, "CLAIM_DISABLED");
         require(claimEndBlock == 0 || block.number <= claimEndBlock, "CLAIM_ENDED");
         require(agentId < MAX_AGENT_ID, "INVALID_AGENT");
