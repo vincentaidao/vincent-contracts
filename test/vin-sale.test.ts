@@ -17,7 +17,7 @@ describe("VinSale", function () {
     await sale.waitForDeployment();
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
-    await (await vin.setSaleContract(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
 
     const saleSupply = 10_000_000_000n * 10n ** 18n;
     await (await vin.mint(await sale.getAddress(), saleSupply)).wait();
@@ -51,7 +51,7 @@ describe("VinSale", function () {
     await sale.waitForDeployment();
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
-    await (await vin.setSaleContract(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
 
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("10000000", 18))).wait();
 
@@ -75,7 +75,7 @@ describe("VinSale", function () {
     await sale.waitForDeployment();
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
-    await (await vin.setSaleContract(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
 
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("10000000", 18))).wait();
 
@@ -102,7 +102,7 @@ describe("VinSale", function () {
     await sale.waitForDeployment();
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
-    await (await vin.setSaleContract(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("10000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
@@ -130,7 +130,7 @@ describe("VinSale", function () {
     await sale.waitForDeployment();
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
-    await (await vin.setSaleContract(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
 
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("10000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
@@ -161,7 +161,7 @@ describe("VinSale", function () {
     await sale.waitForDeployment();
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
-    await (await vin.setSaleContract(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("10000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 

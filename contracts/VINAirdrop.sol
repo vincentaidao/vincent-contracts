@@ -6,6 +6,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+interface IVINAirdropToken is IERC20 {
+    function airdropBurn(uint256 amount) external;
+}
+
 interface IIdentityRegistry {
     function getAgentWallet(uint256 agentId) external view returns (address);
 }
@@ -19,7 +23,7 @@ contract VINAirdrop is Ownable, ReentrancyGuard {
     uint256 public constant MAX_AGENT_ID = 25000;
     uint256 public constant CLAIM_AMOUNT = 12_000 ether;
 
-    IERC20 public immutable vin;
+    IVINAirdropToken public immutable vin;
     IIdentityRegistry public immutable registry;
 
     mapping(uint256 => bool) public claimed;
@@ -41,7 +45,7 @@ contract VINAirdrop is Ownable, ReentrancyGuard {
     }
 
     constructor(address initialOwner, address vinToken, address registryAddress) Ownable(initialOwner) {
-        vin = IERC20(vinToken);
+        vin = IVINAirdropToken(vinToken);
         registry = IIdentityRegistry(registryAddress);
     }
 
@@ -73,7 +77,7 @@ contract VINAirdrop is Ownable, ReentrancyGuard {
         require(block.number > claimEndBlock, "CLAIM_ACTIVE");
         uint256 balance = vin.balanceOf(address(this));
         require(balance > 0, "NO_UNCLAIMED");
-        vin.safeTransfer(address(0x000000000000000000000000000000000000dEaD), balance);
+        vin.airdropBurn(balance);
         emit UnclaimedBurned(balance);
     }
 
@@ -89,7 +93,7 @@ contract VINAirdrop is Ownable, ReentrancyGuard {
 
         claimed[agentId] = true;
         totalClaimedVin += CLAIM_AMOUNT;
-        vin.safeTransfer(wallet, CLAIM_AMOUNT);
+        IERC20(address(vin)).safeTransfer(wallet, CLAIM_AMOUNT);
 
         emit Claimed(agentId, wallet, CLAIM_AMOUNT);
     }

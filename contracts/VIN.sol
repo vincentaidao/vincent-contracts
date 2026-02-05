@@ -14,14 +14,21 @@ import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     bool public transfersEnabled;
     mapping(address => bool) public allowlisted;
-    mapping(address => bool) public isSaleContract;
+    address private saleContract;
+    address private airdropContract;
 
     event TransfersEnabled();
     event AllowlistUpdated(address indexed account, bool allowed);
     event SaleContractUpdated(address indexed account, bool allowed);
+    event AirdropContractUpdated(address indexed account);
 
     modifier onlySale() {
-        require(isSaleContract[msg.sender], "VIN: not sale");
+        require(msg.sender == saleContract, "VIN: not sale");
+        _;
+    }
+
+    modifier onlyAirdrop() {
+        require(msg.sender == airdropContract, "VIN: not airdrop");
         _;
     }
 
@@ -49,15 +56,26 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
         emit AllowlistUpdated(account, allowed);
     }
 
-    /// @notice Register sale contracts for burn privileges.
-    function setSaleContract(address account, bool allowed) external onlyOwner {
-        isSaleContract[account] = allowed;
-        emit SaleContractUpdated(account, allowed);
+    /// @notice Set the sale contract authorized to burn/refund + enable transfers.
+    function setSaleContract(address account) external onlyOwner {
+        saleContract = account;
+        emit SaleContractUpdated(account, account != address(0));
+    }
+
+    /// @notice Set the airdrop contract authorized to burn unclaimed tokens.
+    function setAirdropContract(address account) external onlyOwner {
+        airdropContract = account;
+        emit AirdropContractUpdated(account);
     }
 
     /// @notice Burn tokens from a buyer during refunds.
     function saleBurn(address from, uint256 amount) external onlySale {
         _burn(from, amount);
+    }
+
+    /// @notice Burn unclaimed airdrop tokens (airdrop contract only).
+    function airdropBurn(uint256 amount) external onlyAirdrop {
+        _burn(msg.sender, amount);
     }
 
     // --- ERC20Votes overrides ---

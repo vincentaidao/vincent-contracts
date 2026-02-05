@@ -171,8 +171,9 @@ async function main() {
   await (await vin.setAllowlist(airdropAddress, true)).wait();
   console.log("Allowlist set for sale/seeder/locker/airdrop");
 
-  await (await vin.setSaleContract(saleAddress, true)).wait();
-  console.log("Sale contract registered for burn");
+  await (await vin.setSaleContract(saleAddress)).wait();
+  await (await vin.setAirdropContract(airdropAddress)).wait();
+  console.log("Sale contract registered for burn + airdrop burn set");
 
   await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();
   await (await vin.mint(HUMAN_WALLET, HUMAN_SUPPLY)).wait();
