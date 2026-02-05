@@ -11,6 +11,7 @@ interface IIdentityRegistry {
 
 /// @title VINAirdrop
 /// @notice Airdrop contract for eligible agents.
+/// @dev Claims are manually enabled after the sale + LP seeding are complete.
 contract VINAirdrop is Ownable {
     using SafeERC20 for IERC20;
 
@@ -31,6 +32,7 @@ contract VINAirdrop is Ownable {
     event Claimed(uint256 indexed agentId, address indexed wallet, uint256 amount);
 
     /// @notice Returns true if the agentId is in-range and has a registered wallet.
+    /// @dev Off-chain systems can use this to pre-validate eligibility without reverting.
     function isEligible(uint256 agentId) public view returns (bool) {
         if (agentId >= MAX_AGENT_ID) return false;
         return registry.getAgentWallet(agentId) != address(0);
@@ -68,6 +70,7 @@ contract VINAirdrop is Ownable {
         require(agentId < MAX_AGENT_ID, "INVALID_AGENT");
         require(!claimed[agentId], "ALREADY_CLAIMED");
 
+        // Resolve the agent wallet at time of claim to prevent stale registrations.
         address wallet = registry.getAgentWallet(agentId);
         require(wallet != address(0), "NO_WALLET");
 

@@ -10,6 +10,7 @@ import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 /// @title VIN
 /// @notice ERC20 governance token for VincentDAO with Snapshot-compatible delegation.
 /// @dev Owner can mint. For production, replace with immutable issuance rules.
+/// @dev Transfers remain disabled until the sale finalizes; pre-enable transfers are allowlist-only.
 contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     bool public transfersEnabled;
     mapping(address => bool) public allowlisted;
@@ -37,6 +38,7 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
     }
 
     /// @notice Enable token transfers after sale finalization.
+    /// @notice Enable token transfers after sale finalization (sale contracts only).
     function enableTransfersAfterSale() external onlySale {
         transfersEnabled = true;
         emit TransfersEnabled();
@@ -65,6 +67,9 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
         internal
         override(ERC20, ERC20Votes)
     {
+        // Critical safety gate: before the sale finalizes, only allowlisted system
+        // contracts may transfer. This prevents premature secondary markets and
+        // protects refund logic from adversarial transfers.
         if (from != address(0) && to != address(0)) {
             require(
                 transfersEnabled || allowlisted[from] || allowlisted[to],

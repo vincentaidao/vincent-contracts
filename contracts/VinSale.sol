@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -11,9 +12,9 @@ interface IVIN is IERC20 {
 }
 
 /// @title VinSale
-/// @notice Fixed-price ETH sale with refunds and post-finalize claims.
+/// @notice Fixed-price ETH sale with refunds and post-finalize LP seeding.
 /// @dev Sale can only be finalized once the hard cap is met. No time-based end and no early finalize.
-contract VinSale is Ownable {
+contract VinSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant VIN_PER_ETH = 5_000_000; // 5,000,000 VIN per 1 ETH
@@ -26,7 +27,6 @@ contract VinSale is Ownable {
     uint256 public totalRaised;
 
     mapping(address => uint256) public contributed;
-    mapping(address => uint256) public vinOwed;
 
     event Commit(address indexed buyer, uint256 ethAccepted, uint256 vinAmount);
     event Refund(address indexed buyer, uint256 ethAmount, uint256 vinAmount);
@@ -48,7 +48,7 @@ contract VinSale is Ownable {
         commit();
     }
 
-    function commit() public payable {
+    function commit() public payable nonReentrant {
         require(!finalized, "FINALIZED");
         require(msg.value > 0, "ZERO");
 
@@ -62,12 +62,12 @@ contract VinSale is Ownable {
 
         uint256 vinAmount = accepted * VIN_PER_ETH;
         contributed[msg.sender] += accepted;
-        vinOwed[msg.sender] += vinAmount;
         totalRaised += accepted;
 
         // Immediate delivery from sale inventory.
         IERC20(address(vin)).safeTransfer(msg.sender, vinAmount);
 
+        // Refund any overflow ETH without reentering (guarded by nonReentrant).
         if (accepted < msg.value) {
             uint256 refundAmount = msg.value - accepted;
             (bool success, ) = msg.sender.call{value: refundAmount}("");
@@ -77,7 +77,7 @@ contract VinSale is Ownable {
         emit Commit(msg.sender, accepted, vinAmount);
     }
 
-    function refund(uint256 ethAmount) external {
+    function refund(uint256 ethAmount) external nonReentrant {
         require(!finalized, "FINALIZED");
         require(ethAmount > 0, "ZERO");
 
@@ -86,7 +86,6 @@ contract VinSale is Ownable {
 
         uint256 vinAmount = ethAmount * VIN_PER_ETH;
         contributed[msg.sender] = contributedAmount - ethAmount;
-        vinOwed[msg.sender] -= vinAmount;
         totalRaised -= ethAmount;
 
         vin.saleBurn(msg.sender, vinAmount);
@@ -97,7 +96,7 @@ contract VinSale is Ownable {
         emit Refund(msg.sender, ethAmount, vinAmount);
     }
 
-    function finalize(address liquiditySeeder) external onlyOwner {
+    function finalize(address liquiditySeeder) external onlyOwner nonReentrant {
         require(!finalized, "FINALIZED");
         require(totalRaised == totalCapWei, "CAP_NOT_MET");
 
@@ -123,12 +122,13 @@ contract VinSale is Ownable {
             IERC20(address(vin)).safeTransfer(liquiditySeeder, lpVinAmount);
         }
 
-        // Call seeder.
+        // Call seeder to mint/lock the LP position.
         (bool seedSuccess, ) = liquiditySeeder.call(
             abi.encodeWithSignature("seed(uint256)", lpVinAmount)
         );
         require(seedSuccess, "SEED_FAILED");
 
+        // Enable global transfers after LP is seeded and ownership is shifted to sale.
         vin.enableTransfersAfterSale();
 
         emit Finalized(treasuryEth, lpEth, lpVinAmount);
