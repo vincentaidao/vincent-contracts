@@ -36,14 +36,8 @@ contract VIN is ERC20, ERC20Permit, ERC20Votes, Ownable {
         _mint(to, amount);
     }
 
-    /// @notice Enable token transfers.
-    function enableTransfers() external onlyOwner {
-        transfersEnabled = true;
-        emit TransfersEnabled();
-    }
-
-    /// @notice Enable token transfers from the sale contract.
-    function enableTransfersFromSale() external onlySale {
+    /// @notice Enable token transfers after sale finalization.
+    function enableTransfersAfterSale() external onlySale {
         transfersEnabled = true;
         emit TransfersEnabled();
     }

@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IVIN is IERC20 {
-    function enableTransfersFromSale() external;
+    function enableTransfersAfterSale() external;
     function saleBurn(address from, uint256 amount) external;
 }
 
@@ -129,7 +129,7 @@ contract VinSale is Ownable {
         );
         require(seedSuccess, "SEED_FAILED");
 
-        vin.enableTransfersFromSale();
+        vin.enableTransfersAfterSale();
 
         emit Finalized(treasuryEth, lpEth, lpVinAmount);
     }
