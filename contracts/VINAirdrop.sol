@@ -31,6 +31,7 @@ contract VINAirdrop is Ownable, ReentrancyGuard {
     event ClaimEndBlockSet(uint256 endBlock);
     event ClaimWindowSet(uint256 startBlock, uint256 endBlock);
     event Claimed(uint256 indexed agentId, address indexed wallet, uint256 amount);
+    event UnclaimedBurned(uint256 amount);
 
     /// @notice Returns true if the agentId is in-range and has a registered wallet.
     /// @dev Off-chain systems can use this to pre-validate eligibility without reverting.
@@ -63,6 +64,17 @@ contract VINAirdrop is Ownable, ReentrancyGuard {
         emit ClaimEndBlockSet(endBlock);
         emit ClaimEnabledSet(true);
         emit ClaimWindowSet(block.number, endBlock);
+    }
+
+    /// @notice Burn remaining VIN after the claim window ends.
+    /// @dev Requires a non-zero claimEndBlock and that the window has elapsed.
+    function burnUnclaimed() external onlyOwner nonReentrant {
+        require(claimEndBlock != 0, "NO_END_BLOCK");
+        require(block.number > claimEndBlock, "CLAIM_ACTIVE");
+        uint256 balance = vin.balanceOf(address(this));
+        require(balance > 0, "NO_UNCLAIMED");
+        vin.safeTransfer(address(0x000000000000000000000000000000000000dEaD), balance);
+        emit UnclaimedBurned(balance);
     }
 
     function claim(uint256 agentId) external nonReentrant {
