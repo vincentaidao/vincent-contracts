@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-const CLAIM_AMOUNT = ethers.parseEther("12000");
+const CLAIM_AMOUNT = ethers.parseEther("5000");
 
 describe("VINAirdrop", function () {
   it("claims when enabled and registry wallet is set", async function () {
@@ -75,7 +75,7 @@ describe("VINAirdrop", function () {
     await (await vin.mint(await airdrop.getAddress(), CLAIM_AMOUNT)).wait();
     await (await vin.setAllowlist(await airdrop.getAddress(), true)).wait();
 
-    expect(await airdrop.isEligible(25_000)).to.equal(false);
+    expect(await airdrop.isEligible(23_000)).to.equal(false);
     expect(await airdrop.isEligible(7)).to.equal(false);
 
     await (await registry.setAgentWallet(7, claimant.address)).wait();
@@ -102,7 +102,7 @@ describe("VINAirdrop", function () {
     await (await registry.setAgentWallet(42, claimant.address)).wait();
     await (await airdrop.setClaimEnabled(true)).wait();
 
-    await expect(airdrop.claim(25_000)).to.be.revertedWith("INVALID_AGENT");
+    await expect(airdrop.claim(23_000)).to.be.revertedWith("INVALID_AGENT");
 
     await expect(airdrop.claim(1)).to.be.revertedWith("NO_WALLET");
 

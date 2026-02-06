@@ -1,9 +1,9 @@
 import { ethers } from "hardhat";
 
 const TOTAL_SUPPLY = ethers.parseUnits("1000000000", 18);
-const SALE_SUPPLY = ethers.parseUnits("150000000", 18);
-const DAO_SUPPLY = ethers.parseUnits("300000000", 18);
-const LP_VIN = ethers.parseUnits("90000000", 18);
+const SALE_SUPPLY = ethers.parseUnits("300000000", 18);
+const DAO_SUPPLY = ethers.parseUnits("335000000", 18);
+const LP_VIN = ethers.parseUnits("150000000", 18);
 const HARD_CAP = ethers.parseEther("0.001");
 
 const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";

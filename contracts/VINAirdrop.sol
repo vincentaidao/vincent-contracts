@@ -20,8 +20,8 @@ interface IIdentityRegistry {
 contract VINAirdrop is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_AGENT_ID = 25000;
-    uint256 public constant CLAIM_AMOUNT = 12_000 ether;
+    uint256 public constant MAX_AGENT_ID = 23000;
+    uint256 public constant CLAIM_AMOUNT = 5_000 ether;
 
     IVINAirdropToken public immutable vin;
     IIdentityRegistry public immutable registry;

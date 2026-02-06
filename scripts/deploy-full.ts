@@ -6,11 +6,11 @@ import { NETWORK_DEFAULTS, UNISWAP_V4_BY_CHAIN_ID } from "./lib/deploy-config";
 const DAO_WALLET = "0xe70Fd86Bfde61355C7b2941F275016A0206CdDde";
 const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
 
-const DAO_SUPPLY = ethers.parseUnits("300000000", 18);
+const DAO_SUPPLY = ethers.parseUnits("335000000", 18);
 const HUMAN_SUPPLY = ethers.parseUnits("100000000", 18);
 const SALE_SUPPLY = ethers.parseUnits("300000000", 18);
 const LP_SUPPLY = ethers.parseUnits("150000000", 18);
-const AIRDROP_SUPPLY = ethers.parseUnits("300000000", 18);
+const AIRDROP_SUPPLY = ethers.parseUnits("115000000", 18);
 
 const HARD_CAP = ethers.parseEther("40");
 
@@ -219,9 +219,9 @@ async function main() {
     airdrop: {
       address: airdropAddress,
       tx: airdrop.deploymentTransaction()?.hash,
-      claimAmountVin: "12000",
-      eligibleAgentIds: "0..24999",
-      totalVin: "300000000",
+      claimAmountVin: "5000",
+      eligibleAgentIds: "0..22999",
+      totalVin: "115000000",
       claimDurationBlocks: blocksFor3Months.toString(),
       claimEnabled: false,
       claimsPolicy: CLAIM_ENABLE_POLICY,
