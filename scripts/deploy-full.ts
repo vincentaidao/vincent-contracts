@@ -20,7 +20,6 @@ const CLAIM_ENABLE_POLICY =
 type CliArgs = {
   network?: string;
   stage?: string;
-  confirmMainnet?: boolean;
   force?: boolean;
 };
 
@@ -44,10 +43,6 @@ function parseArgs(argv: string[]): CliArgs {
     }
     if (current.startsWith("--stage=")) {
       args.stage = current.split("=")[1];
-      continue;
-    }
-    if (current === "--confirm-mainnet") {
-      args.confirmMainnet = true;
       continue;
     }
     if (current === "--force") {
@@ -80,14 +75,6 @@ async function main() {
   const actualChainId = Number((await ethers.provider.getNetwork()).chainId);
   if (actualChainId !== defaults.chainId) {
     throw new Error(`ChainId mismatch: expected ${defaults.chainId}, got ${actualChainId}`);
-  }
-
-  if (networkName === "mainnet") {
-    const confirmed =
-      cli.confirmMainnet || process.env.CONFIRM_MAINNET === "YES" || process.env.CONFIRM_MAINNET === "true";
-    if (!confirmed) {
-      throw new Error("Mainnet deploy requires --confirm-mainnet or CONFIRM_MAINNET=YES");
-    }
   }
 
   const outDir = join(__dirname, "..", "deployments");

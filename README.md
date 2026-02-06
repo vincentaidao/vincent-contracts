@@ -7,6 +7,7 @@ Single entrypoint:
 ```bash
 pnpm deploy -- --network sepolia
 pnpm deploy -- --network sepolia --stage dev
+pnpm deploy -- --network mainnet --stage prod
 ```
 
 Notes:
