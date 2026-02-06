@@ -8,11 +8,11 @@ const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
 
 const DAO_SUPPLY = ethers.parseUnits("300000000", 18);
 const HUMAN_SUPPLY = ethers.parseUnits("100000000", 18);
-const SALE_SUPPLY = ethers.parseUnits("300000000", 18);
-const LP_SUPPLY = ethers.parseUnits("150000000", 18);
+const SALE_SUPPLY = ethers.parseUnits("200000000", 18);
+const LP_SUPPLY = ethers.parseUnits("100000000", 18);
 const AIRDROP_SUPPLY = ethers.parseUnits("300000000", 18);
 
-const HARD_CAP = ethers.parseEther("60");
+const HARD_CAP = ethers.parseEther("40");
 
 const CLAIM_ENABLE_POLICY =
   "Enable claims manually 1 week after sellout AND after LP is seeded.";
@@ -203,7 +203,7 @@ async function main() {
     sale: {
       address: saleAddress,
       tx: sale.deploymentTransaction()?.hash,
-      capEth: "60",
+      capEth: "40",
       capWei: HARD_CAP.toString(),
       finalizePolicy: "Only when cap is met. No time-based end and no early finalize.",
     },

@@ -102,7 +102,7 @@ contract VinSale is Ownable, ReentrancyGuard {
 
         finalized = true;
 
-        uint256 lpEth = totalRaised > 30 ether ? 30 ether : totalRaised;
+        uint256 lpEth = totalRaised > 20 ether ? 20 ether : totalRaised;
         uint256 treasuryEth = totalRaised > lpEth ? totalRaised - lpEth : 0;
 
         if (treasuryEth > 0) {
