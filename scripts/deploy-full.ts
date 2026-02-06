@@ -184,9 +184,7 @@ async function main() {
   const minted = DAO_SUPPLY + HUMAN_SUPPLY + SALE_SUPPLY + LP_SUPPLY + AIRDROP_SUPPLY;
   console.log("Minted total:", minted.toString());
 
-  await (await vin.transferOwnership(saleAddress)).wait();
-  await (await seeder.transferOwnership(saleAddress)).wait();
-  console.log("Transferred VIN + Seeder ownership to Sale");
+  console.log("Ownership unchanged (VIN + Seeder remain with deployer). Transfer manually if needed.");
 
   const record = {
     network: networkName,

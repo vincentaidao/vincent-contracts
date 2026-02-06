@@ -21,6 +21,7 @@ Notes:
 - `--network` is required when not using Hardhat's `--network` switch.
 - `--stage` is optional; it suffixes the deployment record filename.
 - Mainnet requires `--confirm-mainnet` or `CONFIRM_MAINNET=YES`.
+- Deploy does **not** transfer VIN or Seeder ownership; do that manually if needed.
 
 ## Airdrop Eligibility
 
