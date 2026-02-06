@@ -17,7 +17,7 @@ interface IVIN is IERC20 {
 contract VinSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public constant VIN_PER_ETH = 5_000_000; // 5,000,000 VIN per 1 ETH
+    uint256 public constant VIN_PER_ETH = 7_500_000; // 7,500,000 VIN per 1 ETH
     uint256 public immutable totalCapWei; // in wei
 
     address public immutable daoWallet;
