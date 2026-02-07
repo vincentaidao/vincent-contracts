@@ -154,8 +154,7 @@ async function main() {
 
   await (await vin.setAllowlist(saleAddress, true)).wait();
   await (await vin.setAllowlist(seederAddress, true)).wait();
-  await (await vin.setAllowlist(lockerAddress, true)).wait();
-  console.log("Allowlist set for sale/seeder/locker");
+  console.log("Allowlist set for sale/seeder");
 
   await (await vin.setSaleContract(saleAddress)).wait();
   await (await vin.setAirdropContract(airdropAddress)).wait();
