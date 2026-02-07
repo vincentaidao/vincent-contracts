@@ -25,6 +25,9 @@ contract LiquiditySeeder is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using PoolIdLibrary for PoolKey;
 
+    error SaleAlreadySet();
+    error NotSale();
+
     address public immutable token;
     address public immutable poolManager;
     address public immutable positionManager;
@@ -32,9 +35,12 @@ contract LiquiditySeeder is Ownable, ReentrancyGuard {
     address public immutable daoWallet;
     address public immutable locker;
 
+    address public saleContract;
+
     uint24 public constant FEE = 0;
     int24 public constant TICK_SPACING = 10;
 
+    event SaleContractSet(address indexed saleContract);
     event Seeded(bytes32 indexed poolId, uint256 indexed tokenId, uint128 liquidity, int24 tickLower, int24 tickUpper);
 
     constructor(
@@ -56,8 +62,21 @@ contract LiquiditySeeder is Ownable, ReentrancyGuard {
 
     receive() external payable {}
 
+    function setSaleContract(address _saleContract) external onlyOwner {
+        if (saleContract != address(0)) revert SaleAlreadySet();
+        require(_saleContract != address(0), "INVALID_SALE");
+        require(_saleContract.code.length > 0, "BAD_SALE");
+        saleContract = _saleContract;
+        emit SaleContractSet(_saleContract);
+    }
+
+    modifier onlySale() {
+        if (msg.sender != saleContract) revert NotSale();
+        _;
+    }
+
     /// @notice Seed a full-range position using all ETH + tokenAmount VIN held by this contract.
-    function seed(uint256 tokenAmount) external onlyOwner nonReentrant {
+    function seed(uint256 tokenAmount) external payable onlySale nonReentrant {
         uint256 ethAmount = address(this).balance;
         require(ethAmount > 0, "NO_ETH");
         require(tokenAmount > 0, "NO_TOKEN");

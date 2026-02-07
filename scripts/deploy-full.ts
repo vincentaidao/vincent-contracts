@@ -109,13 +109,6 @@ async function main() {
   console.log("VIN deployed:", vinAddress);
   console.log("VIN deploy tx:", vin.deploymentTransaction()?.hash);
 
-  const Sale = await ethers.getContractFactory("VinSale");
-  const sale = await Sale.deploy(deployer.address, vinAddress, DAO_WALLET, HARD_CAP);
-  await sale.waitForDeployment();
-  const saleAddress = await sale.getAddress();
-  console.log("Sale deployed:", saleAddress);
-  console.log("Sale deploy tx:", sale.deploymentTransaction()?.hash);
-
   const Locker = await ethers.getContractFactory("PermanentLocker");
   const locker = await Locker.deploy();
   await locker.waitForDeployment();
@@ -138,6 +131,13 @@ async function main() {
   console.log("Seeder deployed:", seederAddress);
   console.log("Seeder deploy tx:", seeder.deploymentTransaction()?.hash);
 
+  const Sale = await ethers.getContractFactory("VinSale");
+  const sale = await Sale.deploy(deployer.address, vinAddress, DAO_WALLET, seederAddress, HARD_CAP);
+  await sale.waitForDeployment();
+  const saleAddress = await sale.getAddress();
+  console.log("Sale deployed:", saleAddress);
+  console.log("Sale deploy tx:", sale.deploymentTransaction()?.hash);
+
   const Airdrop = await ethers.getContractFactory("VINAirdrop");
   const airdrop = await Airdrop.deploy(deployer.address, vinAddress, identityRegistry);
   await airdrop.waitForDeployment();
@@ -156,9 +156,10 @@ async function main() {
   await (await vin.setAllowlist(seederAddress, true)).wait();
   console.log("Allowlist set for sale/seeder");
 
+  await (await seeder.setSaleContract(saleAddress)).wait();
   await (await vin.setSaleContract(saleAddress)).wait();
   await (await vin.setAirdropContract(airdropAddress)).wait();
-  console.log("Sale contract registered for burn + airdrop burn set");
+  console.log("Seeder+Sale contract wiring complete; sale burn + airdrop burn set");
 
   await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();
   await (await vin.mint(HUMAN_WALLET, HUMAN_SUPPLY)).wait();

@@ -4,17 +4,34 @@ import { ethers } from "hardhat";
 const VIN_PER_ETH = 7_500_000n;
 
 describe("VinSale", function () {
-  it("accepts commits, refunds overflow, and delivers VIN", async function () {
-    const [owner, buyer] = await ethers.getSigners();
+  async function deploySaleFixture(capEth: string = "1") {
+    const [owner] = await ethers.getSigners();
 
     const VIN = await ethers.getContractFactory("VIN");
     const vin = await VIN.deploy(owner.address);
     await vin.waitForDeployment();
 
-    const cap = ethers.parseEther("2");
+    const Seeder = await ethers.getContractFactory("MockLiquiditySeeder");
+    const seeder = await Seeder.deploy();
+    await seeder.waitForDeployment();
+
+    const cap = ethers.parseEther(capEth);
     const Sale = await ethers.getContractFactory("VinSale");
-    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, cap);
+    const sale = await Sale.deploy(
+      owner.address,
+      await vin.getAddress(),
+      owner.address,
+      await seeder.getAddress(),
+      cap
+    );
     await sale.waitForDeployment();
+
+    return { owner, vin, seeder, sale, cap };
+  }
+
+  it("accepts commits, refunds overflow, and delivers VIN", async function () {
+    const [, buyer] = await ethers.getSigners();
+    const { vin, sale } = await deploySaleFixture("2");
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
@@ -39,16 +56,8 @@ describe("VinSale", function () {
   });
 
   it("reverts when cap is reached", async function () {
-    const [owner, buyer] = await ethers.getSigners();
-
-    const VIN = await ethers.getContractFactory("VIN");
-    const vin = await VIN.deploy(owner.address);
-    await vin.waitForDeployment();
-
-    const cap = ethers.parseEther("1");
-    const Sale = await ethers.getContractFactory("VinSale");
-    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, cap);
-    await sale.waitForDeployment();
+    const [, buyer] = await ethers.getSigners();
+    const { vin, sale, cap } = await deploySaleFixture("1");
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
@@ -63,16 +72,8 @@ describe("VinSale", function () {
   });
 
   it("allows refunds before finalize and burns VIN", async function () {
-    const [owner, buyer] = await ethers.getSigners();
-
-    const VIN = await ethers.getContractFactory("VIN");
-    const vin = await VIN.deploy(owner.address);
-    await vin.waitForDeployment();
-
-    const cap = ethers.parseEther("1");
-    const Sale = await ethers.getContractFactory("VinSale");
-    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, cap);
-    await sale.waitForDeployment();
+    const [, buyer] = await ethers.getSigners();
+    const { vin, sale } = await deploySaleFixture("1");
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
@@ -90,44 +91,24 @@ describe("VinSale", function () {
   });
 
   it("only owner can finalize", async function () {
-    const [owner, buyer] = await ethers.getSigners();
-
-    const VIN = await ethers.getContractFactory("VIN");
-    const vin = await VIN.deploy(owner.address);
-    await vin.waitForDeployment();
-
-    const cap = ethers.parseEther("1");
-    const Sale = await ethers.getContractFactory("VinSale");
-    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, cap);
-    await sale.waitForDeployment();
+    const [, buyer] = await ethers.getSigners();
+    const { vin, sale, cap } = await deploySaleFixture("1");
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
-    const Seeder = await ethers.getContractFactory("MockLiquiditySeeder");
-    const seeder = await Seeder.deploy();
-    await seeder.waitForDeployment();
-
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
 
-    await expect(sale.connect(buyer).finalize(await seeder.getAddress()))
+    await expect(sale.connect(buyer).finalize())
       .to.be.revertedWithCustomError(sale, "OwnableUnauthorizedAccount")
       .withArgs(buyer.address);
   });
 
   it("finalizes only when cap is met, seeds LP, and enables transfers", async function () {
-    const [owner, buyer] = await ethers.getSigners();
-
-    const VIN = await ethers.getContractFactory("VIN");
-    const vin = await VIN.deploy(owner.address);
-    await vin.waitForDeployment();
-
-    const cap = ethers.parseEther("1");
-    const Sale = await ethers.getContractFactory("VinSale");
-    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, cap);
-    await sale.waitForDeployment();
+    const [, buyer] = await ethers.getSigners();
+    const { vin, sale, seeder, cap } = await deploySaleFixture("1");
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
@@ -135,13 +116,9 @@ describe("VinSale", function () {
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
-    const Seeder = await ethers.getContractFactory("MockLiquiditySeeder");
-    const seeder = await Seeder.deploy();
-    await seeder.waitForDeployment();
-
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
 
-    await expect(sale.finalize(await seeder.getAddress())).to.emit(sale, "Finalized");
+    await expect(sale.finalize()).to.emit(sale, "Finalized");
 
     expect(await vin.transfersEnabled()).to.equal(true);
     expect(await seeder.totalSeedCalls()).to.equal(1n);
@@ -149,30 +126,18 @@ describe("VinSale", function () {
   });
 
   it("blocks commits and refunds after finalize and blocks early finalize", async function () {
-    const [owner, buyer] = await ethers.getSigners();
-
-    const VIN = await ethers.getContractFactory("VIN");
-    const vin = await VIN.deploy(owner.address);
-    await vin.waitForDeployment();
-
-    const cap = ethers.parseEther("1");
-    const Sale = await ethers.getContractFactory("VinSale");
-    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, cap);
-    await sale.waitForDeployment();
+    const [, buyer] = await ethers.getSigners();
+    const { vin, sale, cap } = await deploySaleFixture("1");
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
     await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
-    const Seeder = await ethers.getContractFactory("MockLiquiditySeeder");
-    const seeder = await Seeder.deploy();
-    await seeder.waitForDeployment();
-
-    await expect(sale.finalize(await seeder.getAddress())).to.be.revertedWith("CAP_NOT_MET");
+    await expect(sale.finalize()).to.be.revertedWith("CAP_NOT_MET");
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
-    await sale.finalize(await seeder.getAddress());
+    await sale.finalize();
 
     await expect(buyer.sendTransaction({ to: await sale.getAddress(), value: 1n })).to.be.revertedWith(
       "FINALIZED"

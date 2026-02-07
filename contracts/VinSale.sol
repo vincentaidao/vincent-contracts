@@ -11,6 +11,10 @@ interface IVIN is IERC20 {
     function saleBurn(address from, uint256 amount) external;
 }
 
+interface ILiquiditySeeder {
+    function seed(uint256 tokenAmount) external payable;
+}
+
 /// @title VinSale
 /// @notice Fixed-price ETH sale with refunds and post-finalize LP seeding.
 /// @dev Sale can only be finalized once the hard cap is met. No time-based end and no early finalize.
@@ -18,9 +22,10 @@ contract VinSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     uint256 public constant VIN_PER_ETH = 7_500_000; // 7,500,000 VIN per 1 ETH
-    uint256 public immutable totalCapWei; // in wei
+    uint256 public immutable totalCapWei; // in wei (deployment-specific)
 
     address public immutable daoWallet;
+    address public immutable liquiditySeeder;
     IVIN public immutable vin;
 
     bool public finalized;
@@ -36,11 +41,16 @@ contract VinSale is Ownable, ReentrancyGuard {
         address initialOwner,
         address _vin,
         address _daoWallet,
+        address _liquiditySeeder,
         uint256 _totalCapWei
     ) Ownable(initialOwner) {
         require(_totalCapWei > 0, "INVALID_CAP");
+        require(_liquiditySeeder != address(0), "INVALID_SEEDER");
+        require(_liquiditySeeder.code.length > 0, "BAD_SEEDER");
+
         vin = IVIN(_vin);
         daoWallet = _daoWallet;
+        liquiditySeeder = _liquiditySeeder;
         totalCapWei = _totalCapWei;
     }
 
@@ -96,7 +106,7 @@ contract VinSale is Ownable, ReentrancyGuard {
         emit Refund(msg.sender, ethAmount, vinAmount);
     }
 
-    function finalize(address liquiditySeeder) external onlyOwner nonReentrant {
+    function finalize() external onlyOwner nonReentrant {
         require(!finalized, "FINALIZED");
         require(totalRaised == totalCapWei, "CAP_NOT_MET");
 
@@ -112,21 +122,12 @@ contract VinSale is Ownable, ReentrancyGuard {
 
         uint256 lpVinAmount = lpEth * VIN_PER_ETH;
 
-        // Transfer ETH + VIN to seeder contract for LP creation.
-        if (lpEth > 0) {
-            (bool lpSuccess, ) = liquiditySeeder.call{value: lpEth}("");
-            require(lpSuccess, "LP_ETH_FAILED");
-        }
-
         if (lpVinAmount > 0) {
             IERC20(address(vin)).safeTransfer(liquiditySeeder, lpVinAmount);
         }
 
-        // Call seeder to mint/lock the LP position.
-        (bool seedSuccess, ) = liquiditySeeder.call(
-            abi.encodeWithSignature("seed(uint256)", lpVinAmount)
-        );
-        require(seedSuccess, "SEED_FAILED");
+        // Typed interface call to prevent silent success on non-contract targets.
+        ILiquiditySeeder(liquiditySeeder).seed{value: lpEth}(lpVinAmount);
 
         // Enable global transfers after LP is seeded and ownership is shifted to sale.
         vin.enableTransfersAfterSale();
