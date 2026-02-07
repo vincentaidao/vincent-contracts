@@ -159,6 +159,18 @@ async function main() {
   await (await seeder.setSaleContract(saleAddress)).wait();
   await (await vin.setSaleContract(saleAddress)).wait();
   await (await vin.setAirdropContract(airdropAddress)).wait();
+
+  const wiredSeederOnSale = await sale.liquiditySeeder();
+  if (wiredSeederOnSale.toLowerCase() !== seederAddress.toLowerCase()) {
+    throw new Error(`Sale wiring mismatch: expected ${seederAddress}, got ${wiredSeederOnSale}`);
+  }
+
+  const wiredSaleOnSeeder = await seeder.saleContract();
+  if (wiredSaleOnSeeder.toLowerCase() !== saleAddress.toLowerCase()) {
+    throw new Error(`Seeder wiring mismatch: expected ${saleAddress}, got ${wiredSaleOnSeeder}`);
+  }
+
+  console.log("Wiring verified: sale<->seeder links are correct");
   console.log("Seeder+Sale contract wiring complete; sale burn + airdrop burn set");
 
   await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();

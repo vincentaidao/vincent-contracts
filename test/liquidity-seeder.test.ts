@@ -29,7 +29,12 @@ describe("LiquiditySeeder", function () {
     );
     await seeder.waitForDeployment();
 
-    await expect(seeder.connect(other).setSaleContract(other.address)).to.be.reverted;
+    await expect(seeder.connect(other).setSaleContract(other.address))
+      .to.be.revertedWithCustomError(seeder, "OwnableUnauthorizedAccount")
+      .withArgs(other.address);
+
+    await expect(seeder.setSaleContract(ethers.ZeroAddress)).to.be.revertedWith("INVALID_SALE");
+    await expect(seeder.setSaleContract(owner.address)).to.be.revertedWith("BAD_SALE");
 
     const MockSale = await ethers.getContractFactory("MockLiquiditySeeder");
     const mockSale = await MockSale.deploy();
@@ -72,7 +77,7 @@ describe("LiquiditySeeder", function () {
     );
     await seeder.waitForDeployment();
 
-    const SaleCaller = await ethers.getContractFactory("MockLiquiditySeeder");
+    const SaleCaller = await ethers.getContractFactory("MockSaleCaller");
     const saleCaller = await SaleCaller.deploy();
     await saleCaller.waitForDeployment();
     await (await seeder.setSaleContract(await saleCaller.getAddress())).wait();
@@ -83,10 +88,13 @@ describe("LiquiditySeeder", function () {
     await (await vin.mint(await seeder.getAddress(), tokenAmount)).wait();
     await owner.sendTransaction({ to: await seeder.getAddress(), value: ethAmount });
 
-    // Must be called by configured sale contract; invoke via low-level from that contract is not possible in test,
-    // so we directly set sale contract to owner-owned helper is not viable.
-    // For behavior coverage we deploy a sale that calls seeder in vin-sale.test.ts.
-    await expect(seeder.connect(owner).seed(tokenAmount)).to.be.revertedWithCustomError(seeder, "NotSale");
+    await expect(saleCaller.callSeed(await seeder.getAddress(), tokenAmount)).to.emit(seeder, "Seeded");
+
+    expect(await positionManager.lastValue()).to.equal(ethAmount);
+    expect(await permit2.lastToken()).to.equal(await vin.getAddress());
+    expect(await permit2.lastSpender()).to.equal(await positionManager.getAddress());
+    expect(await permit2.lastAmount()).to.equal(tokenAmount);
+    expect(await positionManager.lastDeadline()).to.be.greaterThan(0);
   });
 
   it("rescues funds to a target", async function () {
