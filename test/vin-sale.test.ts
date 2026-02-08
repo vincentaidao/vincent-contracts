@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-const VIN_PER_ETH = 7_500_000n;
+const VIN_PER_ETH = 37_500_000n;
 
 describe("VinSale", function () {
   async function deploySaleFixture(capEth: string = "1") {
@@ -62,7 +62,7 @@ describe("VinSale", function () {
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
 
-    const saleSupply = ethers.parseUnits("15000000", 18);
+    const saleSupply = ethers.parseUnits("75000000", 18);
     await (await vin.mint(await sale.getAddress(), saleSupply)).wait();
 
     const buyerBalanceStart = await ethers.provider.getBalance(buyer.address);
@@ -88,7 +88,7 @@ describe("VinSale", function () {
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
 
-    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("75000000", 18))).wait();
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
 
@@ -104,7 +104,7 @@ describe("VinSale", function () {
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
 
-    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("75000000", 18))).wait();
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: ethers.parseEther("1") });
 
@@ -122,7 +122,7 @@ describe("VinSale", function () {
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
-    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("75000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
@@ -139,7 +139,7 @@ describe("VinSale", function () {
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
 
-    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("75000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
@@ -151,7 +151,7 @@ describe("VinSale", function () {
     expect(await seeder.lastSeedAmount()).to.equal(cap * VIN_PER_ETH);
   });
 
-  it("sends 20 ETH to LP and remainder to DAO on finalize when cap exceeds 20 ETH", async function () {
+  it("sends 4 ETH to LP and 4 ETH to DAO on finalize at the 8 ETH cap", async function () {
     const [owner, buyer, dao] = await ethers.getSigners();
 
     const VIN = await ethers.getContractFactory("VIN");
@@ -162,7 +162,7 @@ describe("VinSale", function () {
     const seeder = await Seeder.deploy();
     await seeder.waitForDeployment();
 
-    const cap = ethers.parseEther("40");
+    const cap = ethers.parseEther("8");
     const Sale = await ethers.getContractFactory("VinSale");
     const sale = await Sale.deploy(owner.address, await vin.getAddress(), dao.address, await seeder.getAddress(), cap);
     await sale.waitForDeployment();
@@ -178,8 +178,9 @@ describe("VinSale", function () {
     await sale.finalize();
 
     const daoAfter = await ethers.provider.getBalance(dao.address);
-    expect(daoAfter - daoBefore).to.equal(ethers.parseEther("20"));
-    expect(await ethers.provider.getBalance(await seeder.getAddress())).to.equal(ethers.parseEther("20"));
+    expect(daoAfter - daoBefore).to.equal(ethers.parseEther("4"));
+    expect(await ethers.provider.getBalance(await seeder.getAddress())).to.equal(ethers.parseEther("4"));
+    expect(await seeder.lastSeedAmount()).to.equal(ethers.parseUnits("150000000", 18));
   });
 
   it("blocks commits and refunds after finalize and blocks early finalize", async function () {
@@ -188,7 +189,7 @@ describe("VinSale", function () {
 
     await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
     await (await vin.setSaleContract(await sale.getAddress())).wait();
-    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("75000000", 18))).wait();
     await (await vin.transferOwnership(await sale.getAddress())).wait();
 
     await expect(sale.finalize()).to.be.revertedWith("CAP_NOT_MET");

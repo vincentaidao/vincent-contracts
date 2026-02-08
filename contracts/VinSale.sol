@@ -21,7 +21,7 @@ interface ILiquiditySeeder {
 contract VinSale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    uint256 public constant VIN_PER_ETH = 7_500_000; // 7,500,000 VIN per 1 ETH
+    uint256 public constant VIN_PER_ETH = 37_500_000; // 37,500,000 VIN per 1 ETH
     uint256 public immutable totalCapWei; // in wei (deployment-specific)
 
     address public immutable daoWallet;
@@ -112,7 +112,7 @@ contract VinSale is Ownable, ReentrancyGuard {
 
         finalized = true;
 
-        uint256 lpEth = totalRaised > 20 ether ? 20 ether : totalRaised;
+        uint256 lpEth = totalRaised > 4 ether ? 4 ether : totalRaised;
         uint256 treasuryEth = totalRaised > lpEth ? totalRaised - lpEth : 0;
 
         if (treasuryEth > 0) {

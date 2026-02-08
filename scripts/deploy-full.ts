@@ -10,8 +10,8 @@ const DAO_SUPPLY = ethers.parseUnits("335000000", 18);
 const HUMAN_SUPPLY = ethers.parseUnits("100000000", 18);
 const AIRDROP_SUPPLY = ethers.parseUnits("115000000", 18);
 
-const HARD_CAP = ethers.parseEther("40");
-const VIN_PER_ETH = 7_500_000n;
+const HARD_CAP = ethers.parseEther("8");
+const VIN_PER_ETH = 37_500_000n;
 
 const CLAIM_ENABLE_POLICY =
   "Enable claims manually 1 week after sellout AND after LP is seeded.";
@@ -165,7 +165,7 @@ async function main() {
   const provider = ethers.provider;
   const deployBlock = await provider.getBlockNumber();
   const blocksFor3Months = 648_000; // ~90 days @ 12s blocks
-  const lpEth = HARD_CAP > ethers.parseEther("20") ? ethers.parseEther("20") : HARD_CAP;
+  const lpEth = HARD_CAP > ethers.parseEther("4") ? ethers.parseEther("4") : HARD_CAP;
   const saleVinSupply = HARD_CAP * VIN_PER_ETH;
   const lpVinSupply = lpEth * VIN_PER_ETH;
   console.log("Deploy block:", deployBlock);
@@ -225,7 +225,7 @@ async function main() {
       address: saleAddress,
       tx: sale.deploymentTransaction()?.hash,
       capEth: ethers.formatEther(HARD_CAP),
-      vinPerEth: "7500000",
+      vinPerEth: "37500000",
       capWei: HARD_CAP.toString(),
       saleVinSupply: saleVinSupply.toString(),
       lpVinSupply: lpVinSupply.toString(),

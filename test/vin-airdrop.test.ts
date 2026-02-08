@@ -138,7 +138,7 @@ describe("VINAirdrop", function () {
     await (await vin.setSaleContract(await sale.getAddress())).wait();
     await (await vin.setAirdropContract(await airdrop.getAddress())).wait();
 
-    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("75000000", 18))).wait();
     await (await vin.mint(await airdrop.getAddress(), CLAIM_AMOUNT)).wait();
     await (await airdrop.setClaimEnabled(true)).wait();
     await (await registry.setAgentWallet(7, claimant.address)).wait();

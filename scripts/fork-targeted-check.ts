@@ -10,7 +10,7 @@ const SALE_SUPPLY = ethers.parseUnits("300000000", 18);
 const LP_SUPPLY = ethers.parseUnits("150000000", 18);
 const AIRDROP_SUPPLY = ethers.parseUnits("115000000", 18);
 
-const HARD_CAP = ethers.parseEther("40");
+const HARD_CAP = ethers.parseEther("8");
 const CLAIM_AMOUNT = ethers.parseUnits("5000", 18);
 
 const UNISWAP = {
@@ -85,7 +85,7 @@ async function main() {
   const seederEth = await ethers.provider.getBalance(await seeder.getAddress());
   const saleVin = await vin.balanceOf(await sale.getAddress());
 
-  if (daoEthDelta < ethers.parseEther("20")) throw new Error("DAO got less than 20 ETH");
+  if (daoEthDelta < ethers.parseEther("4")) throw new Error("DAO got less than 4 ETH");
   if (saleEth !== 0n) throw new Error(`sale ETH leftover ${saleEth}`);
   if (seederEth !== 0n) throw new Error(`seeder ETH leftover ${seederEth}`);
   if (saleVin !== 0n) throw new Error(`sale VIN leftover ${saleVin}`);
