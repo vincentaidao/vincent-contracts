@@ -8,11 +8,10 @@ const HUMAN_WALLET = "0xc5c9C2813035513ac77D2B6104Bfda66Dcf1Bb40";
 
 const DAO_SUPPLY = ethers.parseUnits("335000000", 18);
 const HUMAN_SUPPLY = ethers.parseUnits("100000000", 18);
-const SALE_SUPPLY = ethers.parseUnits("300000000", 18);
-const LP_SUPPLY = ethers.parseUnits("150000000", 18);
 const AIRDROP_SUPPLY = ethers.parseUnits("115000000", 18);
 
 const HARD_CAP = ethers.parseEther("40");
+const VIN_PER_ETH = 7_500_000n;
 
 const CLAIM_ENABLE_POLICY =
   "Enable claims manually 1 week after sellout AND after LP is seeded.";
@@ -148,9 +147,17 @@ async function main() {
   const provider = ethers.provider;
   const deployBlock = await provider.getBlockNumber();
   const blocksFor3Months = 648_000; // ~90 days @ 12s blocks
+  const lpEth = HARD_CAP > ethers.parseEther("20") ? ethers.parseEther("20") : HARD_CAP;
+  const saleVinSupply = HARD_CAP * VIN_PER_ETH;
+  const lpVinSupply = lpEth * VIN_PER_ETH;
   console.log("Deploy block:", deployBlock);
   console.log("Claims left disabled; enable manually with enableClaimsForDuration(blocksFor3Months).");
   console.log(`Airdrop ops policy: ${CLAIM_ENABLE_POLICY}`);
+  console.log("Dynamic sale minting:", {
+    hardCapWei: HARD_CAP.toString(),
+    saleVinSupply: saleVinSupply.toString(),
+    lpVinSupply: lpVinSupply.toString(),
+  });
 
   await (await vin.setAllowlist(saleAddress, true)).wait();
   await (await vin.setAllowlist(seederAddress, true)).wait();
@@ -175,11 +182,11 @@ async function main() {
 
   await (await vin.mint(DAO_WALLET, DAO_SUPPLY)).wait();
   await (await vin.mint(HUMAN_WALLET, HUMAN_SUPPLY)).wait();
-  await (await vin.mint(saleAddress, SALE_SUPPLY + LP_SUPPLY)).wait();
+  await (await vin.mint(saleAddress, saleVinSupply + lpVinSupply)).wait();
   await (await vin.mint(airdropAddress, AIRDROP_SUPPLY)).wait();
   console.log("Minted DAO/Human/Sale+LP/Airdrop allocations");
 
-  const minted = DAO_SUPPLY + HUMAN_SUPPLY + SALE_SUPPLY + LP_SUPPLY + AIRDROP_SUPPLY;
+  const minted = DAO_SUPPLY + HUMAN_SUPPLY + saleVinSupply + lpVinSupply + AIRDROP_SUPPLY;
   console.log("Minted total:", minted.toString());
 
   console.log("Ownership unchanged (VIN + Seeder remain with deployer). Transfer manually if needed.");
@@ -199,9 +206,11 @@ async function main() {
     sale: {
       address: saleAddress,
       tx: sale.deploymentTransaction()?.hash,
-      capEth: "40",
+      capEth: ethers.formatEther(HARD_CAP),
       vinPerEth: "7500000",
       capWei: HARD_CAP.toString(),
+      saleVinSupply: saleVinSupply.toString(),
+      lpVinSupply: lpVinSupply.toString(),
       finalizePolicy: "Only when cap is met. No time-based end and no early finalize.",
     },
     permanentLocker: {
