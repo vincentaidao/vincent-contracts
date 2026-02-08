@@ -59,6 +59,19 @@ function requireEnv(name: string, value?: string) {
   return value;
 }
 
+async function requireContractAddress(label: string, address: string) {
+  if (!ethers.isAddress(address)) {
+    throw new Error(`${label} is not a valid address: ${address}`);
+  }
+  if (address === ethers.ZeroAddress) {
+    throw new Error(`${label} cannot be zero address`);
+  }
+  const code = await ethers.provider.getCode(address);
+  if (code === "0x") {
+    throw new Error(`${label} is not a deployed contract: ${address}`);
+  }
+}
+
 async function main() {
   const cli = parseArgs(process.argv.slice(2));
   const [deployer] = await ethers.getSigners();
@@ -100,6 +113,11 @@ async function main() {
     "UNISWAP_V4_PERMIT2",
     process.env.UNISWAP_V4_PERMIT2 ?? uniswapDefaults?.permit2
   );
+
+  await requireContractAddress("IDENTITY_REGISTRY", identityRegistry);
+  await requireContractAddress("UNISWAP_V4_POOL_MANAGER", poolManager);
+  await requireContractAddress("UNISWAP_V4_POSITION_MANAGER", positionManager);
+  await requireContractAddress("UNISWAP_V4_PERMIT2", permit2);
 
   const VIN = await ethers.getContractFactory("VIN");
   const vin = await VIN.deploy(deployer.address);
