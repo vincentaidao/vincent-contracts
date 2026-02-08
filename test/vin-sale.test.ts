@@ -175,7 +175,9 @@ describe("VinSale", function () {
     const daoBefore = await ethers.provider.getBalance(dao.address);
 
     await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
-    await sale.finalize();
+    await expect(sale.finalize())
+      .to.emit(sale, "Finalized")
+      .withArgs(ethers.parseEther("4"), ethers.parseEther("4"), ethers.parseUnits("150000000", 18));
 
     const daoAfter = await ethers.provider.getBalance(dao.address);
     expect(daoAfter - daoBefore).to.equal(ethers.parseEther("4"));
