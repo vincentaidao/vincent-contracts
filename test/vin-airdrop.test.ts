@@ -110,6 +110,48 @@ describe("VINAirdrop", function () {
     await expect(airdrop.claim(42)).to.be.revertedWith("ALREADY_CLAIMED");
   });
 
+  it("keeps claims blocked until sale finalizes (transfers enabled)", async function () {
+    const [owner, buyer, claimant] = await ethers.getSigners();
+
+    const VIN = await ethers.getContractFactory("VIN");
+    const vin = await VIN.deploy(owner.address);
+    await vin.waitForDeployment();
+
+    const Seeder = await ethers.getContractFactory("MockLiquiditySeeder");
+    const seeder = await Seeder.deploy();
+    await seeder.waitForDeployment();
+
+    const cap = ethers.parseEther("1");
+    const Sale = await ethers.getContractFactory("VinSale");
+    const sale = await Sale.deploy(owner.address, await vin.getAddress(), owner.address, await seeder.getAddress(), cap);
+    await sale.waitForDeployment();
+
+    const Registry = await ethers.getContractFactory("MockIdentityRegistry");
+    const registry = await Registry.deploy();
+    await registry.waitForDeployment();
+
+    const Airdrop = await ethers.getContractFactory("VINAirdrop");
+    const airdrop = await Airdrop.deploy(owner.address, await vin.getAddress(), await registry.getAddress());
+    await airdrop.waitForDeployment();
+
+    await (await vin.setAllowlist(await sale.getAddress(), true)).wait();
+    await (await vin.setSaleContract(await sale.getAddress())).wait();
+    await (await vin.setAirdropContract(await airdrop.getAddress())).wait();
+
+    await (await vin.mint(await sale.getAddress(), ethers.parseUnits("15000000", 18))).wait();
+    await (await vin.mint(await airdrop.getAddress(), CLAIM_AMOUNT)).wait();
+    await (await airdrop.setClaimEnabled(true)).wait();
+    await (await registry.setAgentWallet(7, claimant.address)).wait();
+
+    await expect(airdrop.claim(7)).to.be.revertedWith("VIN: transfers disabled");
+
+    await buyer.sendTransaction({ to: await sale.getAddress(), value: cap });
+    await sale.finalize();
+
+    await expect(airdrop.claim(7)).to.emit(airdrop, "Claimed");
+    expect(await vin.balanceOf(claimant.address)).to.equal(CLAIM_AMOUNT);
+  });
+
   it("respects claim end block and duration helper", async function () {
     const [owner, claimant] = await ethers.getSigners();
 
